@@ -31,7 +31,7 @@ This tool uses a hybrid local + cloud AI architecture:
 | **FFmpeg** | `brew install ffmpeg` |
 | **Ghostscript** | `brew install ghostscript` (for PDF compression) |
 | **~30GB disk space** | For AI model downloads |
-| **OpenRouter API Key** | [openrouter.ai](https://openrouter.ai) - $1-3 per episode |
+| **OpenRouter API Key** | [openrouter.ai](https://openrouter.ai) |
 
 ### Platform Support
 
@@ -80,13 +80,13 @@ python -c "from transformers import Qwen3VLForConditionalGeneration, AutoProcess
 
 These models run in the cloud via [OpenRouter](https://openrouter.ai):
 
-| Model | Purpose | Approx. Cost |
-|-------|---------|--------------|
-| **Claude Sonnet 4.5** | Story writing, pagination | ~$0.50-1.00/episode |
-| **Qwen3-VL-235B** | Frame scoring | ~$0.50-2.00/episode |
-| **GPT-4o-mini** | Utility tasks | ~$0.01/episode |
+| Model | Purpose |
+|-------|---------|
+| **Claude Sonnet 4.5** | Story writing, pagination |
+| **Qwen3-VL-235B** | Frame scoring |
+| **GPT-4o-mini** | Utility tasks |
 
-**Typical total: $1-3 per 11-minute episode**
+See [OpenRouter pricing](https://openrouter.ai/models) for current rates.
 
 ---
 
@@ -108,7 +108,7 @@ source .venv/bin/activate
 
 ### 3. Add Your OpenRouter API Key
 
-Create an account at [openrouter.ai](https://openrouter.ai), add credits ($5-10 to start), and generate an API key.
+Create an account at [openrouter.ai](https://openrouter.ai), add credits, and generate an API key.
 
 ```bash
 echo "sk-or-v1-your-key-here" > openrouterapikey.md
@@ -120,7 +120,7 @@ echo "sk-or-v1-your-key-here" > openrouterapikey.md
 python -m vid2bedtimestory build videos/episode.mkv --franchise hot_wheels_lets_race
 ```
 
-**First run will be slow** (~10-15 min extra) as models download. Subsequent runs are faster.
+**Note:** First run will be slower as models download (~26GB). Subsequent runs use cached models.
 
 ---
 
@@ -225,16 +225,16 @@ See `vid2bedtimestory/knowledge/franchises/hot_wheels_lets_race.json` for a comp
 
 The tool runs through these stages (each can be cached/resumed):
 
-| Stage | Time | What Happens |
-|-------|------|--------------|
-| 1. **Subtitles** | ~5s | Extract dialogue from video |
-| 2. **Video Analysis** | 3-5 min | Local AI scans video for scenes/characters |
-| 3. **Story Writing** | ~30s | Cloud AI writes children's story |
-| 4. **Pagination** | ~30s | Split story into ~30 pages |
-| 5. **Frame Selection** | 8-12 min | Cloud AI picks best frame per page |
-| 6. **PDF Generation** | ~10s | Render the final book |
+| Stage | What Happens |
+|-------|--------------|
+| 1. **Subtitles** | Extract dialogue from video |
+| 2. **Video Analysis** | Local AI scans video for scenes/characters |
+| 3. **Story Writing** | Cloud AI writes children's story |
+| 4. **Pagination** | Split story into pages |
+| 5. **Frame Selection** | AI picks best frame per page |
+| 6. **PDF Generation** | Render the final book |
 
-**Total: ~15-20 minutes per episode** (after models are downloaded)
+Use `--rebuild-from <stage>` to resume from a specific stage.
 
 ---
 
@@ -333,9 +333,7 @@ python -m vid2bedtimestory build video.mkv --franchise your_show --fresh
 ```
 
 ### Pipeline seems stuck
-- Video analysis: 3-5 minutes (watching the full video)
-- Frame selection: 8-12 minutes (scoring hundreds of frames)
-- Story/pagination: ~30 seconds each
+Video analysis and frame selection are the longest stages. They process the full video and score many candidate frames. Be patient, especially on first run.
 
 ### PyTorch/Transformers errors
 Make sure you installed all dependencies:
