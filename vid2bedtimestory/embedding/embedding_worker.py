@@ -118,11 +118,6 @@ def embed_images(image_paths: list[str]):
     try:
         model, processor, device = load_embedder()
         
-        # Import vision processing utility
-        model_path = get_model_path()
-        scripts_path = model_path / "scripts"
-        sys.path.insert(0, str(scripts_path))
-        
         embeddings = []
         
         for i, path in enumerate(image_paths):

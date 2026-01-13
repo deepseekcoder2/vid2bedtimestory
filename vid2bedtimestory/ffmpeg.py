@@ -47,7 +47,34 @@ def ffprobe_streams(video_path: Path) -> dict:
 
 
 def ffprobe_duration_s(video_path: Path) -> float:
-    """Get video duration in seconds using ffprobe."""
+    """Get video duration in seconds using ffprobe.
+    
+    Tries video stream duration first (more accurate for MKV containers),
+    then falls back to format/container duration.
+    """
+    # First try to get video stream duration from stream tags (more accurate for MKV)
+    try:
+        cmd = [
+            "ffprobe",
+            "-v", "error",
+            "-select_streams", "v:0",
+            "-show_entries", "stream_tags=DURATION",
+            "-of", "default=noprint_wrappers=1:nokey=1",
+            str(video_path),
+        ]
+        out = _run(cmd).stdout.strip()
+        if out and out != "N/A" and ":" in out:
+            # Parse duration in format HH:MM:SS.mmm (e.g., "00:10:18.618000000")
+            parts = out.split(":")
+            if len(parts) == 3:
+                hours, mins, secs = parts
+                stream_duration = float(hours) * 3600 + float(mins) * 60 + float(secs)
+                if stream_duration > 0:
+                    return stream_duration
+    except (subprocess.CalledProcessError, ValueError):
+        pass  # Fall through to format duration
+    
+    # Fall back to format/container duration
     try:
         cmd = [
             "ffprobe",
