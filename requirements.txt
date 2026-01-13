@@ -17,12 +17,19 @@ requests>=2.31.0        # HTTP client for OpenRouter API
 opencv-python>=4.8.0    # Video frame extraction
 numpy>=1.24.0           # Array operations
 
-# Video Analysis (Apple Silicon only)
+# Video Analysis - MLX (Apple Silicon only)
 # ============================================
 # These packages only work on Mac with Apple Silicon.
 # Non-Mac users: comment these out and modify the MLX worker scripts.
 mlx>=0.18.0             # Apple MLX framework
 mlx-vlm>=0.1.0          # Vision-Language Models on MLX
+
+# Embedding & Reranking Models (PyTorch)
+# ============================================
+# Required for frame embedding search and reranking.
+# These use MPS (Apple Silicon), CUDA, or CPU automatically.
+torch>=2.0.0            # PyTorch for embedding/reranker models
+transformers>=4.40.0    # HuggingFace transformers for Qwen models
 
 # ============================================
 # Development/Testing (optional)

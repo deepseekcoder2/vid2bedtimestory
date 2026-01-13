@@ -151,6 +151,27 @@ else
     echo -e "${YELLOW}⚠ MLX not available (requires Apple Silicon Mac)${NC}"
 fi
 
+# Check PyTorch and Transformers (required for embedding/reranking)
+echo ""
+echo -e "${YELLOW}Checking PyTorch installation (for embedding models)...${NC}"
+if python -c "import torch" 2>/dev/null; then
+    python -c "import torch; print(f'✓ torch {torch.__version__}')"
+    # Check MPS availability
+    if python -c "import torch; assert torch.backends.mps.is_available()" 2>/dev/null; then
+        echo -e "${GREEN}✓ MPS (Metal Performance Shaders) available${NC}"
+    else
+        echo -e "${YELLOW}⚠ MPS not available (will use CPU for embeddings)${NC}"
+    fi
+else
+    echo -e "${RED}✗ torch not installed (embedding models won't work)${NC}"
+fi
+
+if python -c "import transformers" 2>/dev/null; then
+    python -c "import transformers; print(f'✓ transformers {transformers.__version__}')"
+else
+    echo -e "${RED}✗ transformers not installed (embedding models won't work)${NC}"
+fi
+
 # ============================================
 # Complete!
 # ============================================
@@ -170,5 +191,20 @@ echo "  python -m vid2bedtimestory build <video> --franchise <id>  # Build a boo
 echo ""
 echo -e "${BLUE}To deactivate the virtual environment:${NC}"
 echo "  deactivate"
+echo ""
+echo -e "${YELLOW}============================================${NC}"
+echo -e "${YELLOW}  IMPORTANT: First Run Info${NC}"
+echo -e "${YELLOW}============================================${NC}"
+echo ""
+echo -e "On your first run, AI models will auto-download (~26GB total):"
+echo "  • Qwen3-VL-32B-Instruct-8bit (~18GB) - Video analysis"
+echo "  • Qwen3-VL-Embedding-2B (~4GB) - Frame search"
+echo "  • Qwen3-VL-Reranker-2B (~4GB) - Frame selection"
+echo ""
+echo -e "Models are cached in ~/.cache/huggingface/hub/"
+echo -e "First run may take 10-15 extra minutes for downloads."
+echo ""
+echo -e "${YELLOW}Don't forget to add your OpenRouter API key:${NC}"
+echo "  echo \"sk-or-v1-your-key-here\" > openrouterapikey.md"
 echo ""
 

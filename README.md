@@ -6,54 +6,121 @@ Takes a video file with subtitles → outputs a ~30-page illustrated storybook f
 
 ---
 
-## What You Need
+## Requirements Overview
+
+This tool uses a hybrid local + cloud AI architecture:
+
+| Component | What It Does | Where It Runs |
+|-----------|--------------|---------------|
+| **Video Analysis** | Watches video, extracts scenes/characters | 🖥️ Local (32B VLM) |
+| **Frame Embedding** | Indexes frames for semantic search | 🖥️ Local (2B model) |
+| **Frame Reranking** | Picks best frame for each page | 🖥️ Local (2B model) |
+| **Story Writing** | Writes the children's story | ☁️ Cloud (Claude) |
+| **Frame Scoring** | Scores candidate frames | ☁️ Cloud (Qwen VL) |
+
+**Why local + cloud?** Cloud APIs can't accept 500MB+ video uploads. The heavy video analysis runs locally using Apple's MLX framework, while text generation uses cloud APIs.
+
+---
+
+## System Requirements
 
 | Requirement | Details |
 |-------------|---------|
+| **Mac with Apple Silicon** | M1/M2/M3/M4 with **32GB+ RAM** (64GB recommended) |
 | **Python 3.10+** | `python3 --version` to check |
-| **FFmpeg** | Video processing (`brew install ffmpeg` on Mac, `apt install ffmpeg` on Linux) |
-| **Ghostscript** | PDF compression (`brew install ghostscript` on Mac, `apt install ghostscript` on Linux) |
-| **OpenRouter API Key** | Create account at [openrouter.ai](https://openrouter.ai), add credits, generate key |
-| **A franchise JSON file** | Character database for your show (see below) |
+| **FFmpeg** | `brew install ffmpeg` |
+| **Ghostscript** | `brew install ghostscript` (for PDF compression) |
+| **~30GB disk space** | For AI model downloads |
+| **OpenRouter API Key** | [openrouter.ai](https://openrouter.ai) - $1-3 per episode |
 
 ### Platform Support
 
 | Platform | Status |
 |----------|--------|
-| **Mac (Apple Silicon, 32GB+ RAM)** | ✅ Works out of the box |
-| **Mac (Intel) / PC / Linux** | ⚠️ Requires code modification |
+| **Mac (Apple Silicon, 32GB+ RAM)** | ✅ Full support |
+| **Mac (Apple Silicon, 16GB RAM)** | ⚠️ May work with swap, will be slow |
+| **Mac (Intel)** | ❌ Not supported (no MLX) |
+| **Windows / Linux** | ❌ Requires code modification (replace MLX workers with PyTorch) |
 
-**Why Mac Apple Silicon?** The video analysis stage runs a 32B parameter vision model locally to process your video file. Cloud APIs can't accept 500MB+ video uploads, so local inference is required.
+---
 
-The codebase uses Apple's [MLX framework](https://github.com/ml-explore/mlx) for this. **Non-Mac users** would need to replace the MLX worker scripts (`mlx_worker.py`, `mlx_image_worker.py`, etc.) with a PyTorch/Transformers equivalent.
+## AI Models Required
 
-### About API Costs
+### Local Models (Auto-downloaded on first run)
 
-This tool uses cloud AI models via OpenRouter:
-- **Claude Sonnet** for story writing  
-- **Qwen VL 235B** for frame selection
+These models download automatically from HuggingFace when you first run the pipeline:
 
-You pay per use based on OpenRouter pricing. A typical 11-minute episode costs roughly $1-3 in API calls.
+| Model | Size | Purpose | Framework |
+|-------|------|---------|-----------|
+| **Qwen3-VL-32B-Instruct-8bit** | ~18GB | Video analysis, scene extraction | MLX |
+| **Qwen3-VL-Embedding-2B** | ~4GB | Frame semantic search | PyTorch |
+| **Qwen3-VL-Reranker-2B** | ~4GB | Frame selection refinement | PyTorch |
+
+**Total download: ~26GB** (stored in `~/.cache/huggingface/hub/`)
+
+#### Pre-downloading Models (Optional)
+
+If you want to download models before running the pipeline:
+
+```bash
+# Activate virtual environment first
+source .venv/bin/activate
+
+# Download the main video analysis model (MLX)
+python -c "from mlx_vlm import load; load('mlx-community/Qwen3-VL-32B-Instruct-8bit')"
+
+# Download embedding model (PyTorch)
+python -c "from transformers import AutoModel, AutoProcessor; AutoModel.from_pretrained('Qwen/Qwen3-VL-Embedding-2B', trust_remote_code=True); AutoProcessor.from_pretrained('Qwen/Qwen3-VL-Embedding-2B', trust_remote_code=True)"
+
+# Download reranker model (PyTorch)
+python -c "from transformers import Qwen3VLForConditionalGeneration, AutoProcessor; Qwen3VLForConditionalGeneration.from_pretrained('Qwen/Qwen3-VL-Reranker-2B', trust_remote_code=True); AutoProcessor.from_pretrained('Qwen/Qwen3-VL-Reranker-2B', trust_remote_code=True)"
+```
+
+### Cloud APIs (via OpenRouter)
+
+These models run in the cloud via [OpenRouter](https://openrouter.ai):
+
+| Model | Purpose | Approx. Cost |
+|-------|---------|--------------|
+| **Claude Sonnet 4.5** | Story writing, pagination | ~$0.50-1.00/episode |
+| **Qwen3-VL-235B** | Frame scoring | ~$0.50-2.00/episode |
+| **GPT-4o-mini** | Utility tasks | ~$0.01/episode |
+
+**Typical total: $1-3 per 11-minute episode**
 
 ---
 
 ## Quick Start
 
+### 1. Clone and Setup
+
 ```bash
-# 1. Clone and setup
 git clone https://github.com/vid2bedtimestory/vid2bedtimestory.git
 cd vid2bedtimestory
 ./setup_mac.sh
+```
 
-# 2. Activate the virtual environment
+### 2. Activate Environment
+
+```bash
 source .venv/bin/activate
+```
 
-# 3. Add your OpenRouter API key
+### 3. Add Your OpenRouter API Key
+
+Create an account at [openrouter.ai](https://openrouter.ai), add credits ($5-10 to start), and generate an API key.
+
+```bash
 echo "sk-or-v1-your-key-here" > openrouterapikey.md
+```
 
-# 4. Run it
+### 4. Run It
+
+```bash
 python -m vid2bedtimestory build videos/episode.mkv --franchise hot_wheels_lets_race
 ```
+
+**First run will be slow** (~10-15 min extra) as models download. Subsequent runs are faster.
 
 ---
 
@@ -154,6 +221,23 @@ See `vid2bedtimestory/knowledge/franchises/hot_wheels_lets_race.json` for a comp
 
 ---
 
+## Pipeline Stages
+
+The tool runs through these stages (each can be cached/resumed):
+
+| Stage | Time | What Happens |
+|-------|------|--------------|
+| 1. **Subtitles** | ~5s | Extract dialogue from video |
+| 2. **Video Analysis** | 3-5 min | Local AI scans video for scenes/characters |
+| 3. **Story Writing** | ~30s | Cloud AI writes children's story |
+| 4. **Pagination** | ~30s | Split story into ~30 pages |
+| 5. **Frame Selection** | 8-12 min | Cloud AI picks best frame per page |
+| 6. **PDF Generation** | ~10s | Render the final book |
+
+**Total: ~15-20 minutes per episode** (after models are downloaded)
+
+---
+
 ## Common Commands
 
 ```bash
@@ -196,7 +280,7 @@ After a successful run, you'll find:
 | `--srt PATH` | External SRT subtitle file |
 | `--out PATH` | Output PDF path (default: `out/<video>.pdf`) |
 | `--pages-target N` | Target page count (default: from franchise) |
-| `--subtitle-context N` | Subtitle lines for gap detection (default: 50, see note below) |
+| `--subtitle-context N` | Subtitle lines for gap detection (default: 50) |
 | `--rebuild-from STAGE` | Force rebuild from: `subtitles`, `analysis`, `story`, `pagination`, `screenshots`, `pdf` |
 | `--fresh` | Delete all artifacts and start over |
 | `--dry-run` | Show plan without executing |
@@ -205,9 +289,7 @@ After a successful run, you'll find:
 
 ### Note on Video Length
 
-This tool was tested primarily on **10-11 minute** episodes. The `--subtitle-context` setting controls how much dialogue the AI sees when detecting gaps in video coverage.
-
-For **longer episodes** (15+ minutes), you may need to increase this value:
+This tool was tested primarily on **10-11 minute** episodes. For longer episodes:
 
 ```bash
 # For a 20-minute episode
@@ -217,7 +299,7 @@ python -m vid2bedtimestory build long_episode.mkv --franchise your_show --subtit
 python -m vid2bedtimestory build long_episode.mkv --franchise your_show --subtitle-context 150
 ```
 
-A rough guideline: ~5 lines per minute of video (e.g., 20 minutes → 100 lines).
+Rough guideline: ~5 lines per minute of video.
 
 ---
 
@@ -230,29 +312,95 @@ Your video doesn't have embedded subtitles. Use `--srt` with an external subtitl
 Run `--franchise list` to see available options, or create your own JSON file.
 
 ### "openrouterapikey.md not found"
-Create the file with your API key:
 ```bash
 echo "sk-or-v1-your-key-here" > openrouterapikey.md
 ```
 
-### Pipeline seems stuck
-The video analysis stage can take 3-5 minutes. Story and pagination are faster (~30 seconds each). Frame selection is the longest (8-12 minutes).
+### Model download seems stuck
+Large models (~18GB) can take a while. Check your internet connection and disk space.
 
-### Out of memory
-This tool requires 32GB RAM. Close other applications if you're running low.
+### Out of memory / System becomes unresponsive
+- Close other applications (browsers, IDEs)
+- The 32B model needs ~24GB during inference
+- If you only have 32GB RAM, enable macOS memory pressure handling
+- 64GB RAM is recommended for smooth operation
+
+### "Metal initialization" or GPU errors
+The MLX workers run in separate processes to avoid conflicts. If you see Metal errors:
+```bash
+# Clear any cached state and try again
+python -m vid2bedtimestory build video.mkv --franchise your_show --fresh
+```
+
+### Pipeline seems stuck
+- Video analysis: 3-5 minutes (watching the full video)
+- Frame selection: 8-12 minutes (scoring hundreds of frames)
+- Story/pagination: ~30 seconds each
+
+### PyTorch/Transformers errors
+Make sure you installed all dependencies:
+```bash
+source .venv/bin/activate
+pip install torch transformers
+```
 
 ---
 
-## How It Works (Overview)
+## Architecture
 
-1. **Subtitles** - Extract dialogue from video
-2. **Analysis** - Local AI scans video frames for scenes and characters
-3. **Story** - Cloud AI writes a children's story based on analysis
-4. **Pagination** - Split story into ~30 pages
-5. **Screenshots** - Cloud AI picks the best frame for each page
-6. **PDF** - Render the final book
-
-Total time: ~15-20 minutes per episode.
+```
+┌─────────────────────────────────────────────────────────────┐
+│                        Your Video                            │
+└─────────────────────────────────────────────────────────────┘
+                              │
+                              ▼
+┌─────────────────────────────────────────────────────────────┐
+│  Stage 1: Video Analysis (LOCAL - MLX)                       │
+│  ┌─────────────────────────────────────────────────────────┐│
+│  │ Qwen3-VL-32B-Instruct-8bit                              ││
+│  │ • Watches full video at 8fps                            ││
+│  │ • Extracts scenes, characters, story beats              ││
+│  │ • Outputs structured JSON analysis                      ││
+│  └─────────────────────────────────────────────────────────┘│
+└─────────────────────────────────────────────────────────────┘
+                              │
+                              ▼
+┌─────────────────────────────────────────────────────────────┐
+│  Stage 2-4: Story Generation (CLOUD - OpenRouter)            │
+│  ┌─────────────────────────────────────────────────────────┐│
+│  │ Claude Sonnet 4.5                                       ││
+│  │ • Writes children's story from analysis                 ││
+│  │ • Paginates into ~30 pages                              ││
+│  │ • Generates visual targets for each page                ││
+│  └─────────────────────────────────────────────────────────┘│
+└─────────────────────────────────────────────────────────────┘
+                              │
+                              ▼
+┌─────────────────────────────────────────────────────────────┐
+│  Stage 5: Frame Selection (LOCAL + CLOUD)                    │
+│  ┌──────────────────────┐  ┌──────────────────────────────┐│
+│  │ Embedding (LOCAL)    │  │ Scoring (CLOUD)              ││
+│  │ Qwen3-VL-Embedding-2B│  │ Qwen3-VL-235B                ││
+│  │ • Index all frames   │  │ • Score candidates 1-10     ││
+│  │ • Semantic search    │  │ • Pick best per page        ││
+│  └──────────────────────┘  └──────────────────────────────┘│
+│  ┌──────────────────────┐                                   │
+│  │ Reranking (LOCAL)    │                                   │
+│  │ Qwen3-VL-Reranker-2B │                                   │
+│  │ • Refine selections  │                                   │
+│  └──────────────────────┘                                   │
+└─────────────────────────────────────────────────────────────┘
+                              │
+                              ▼
+┌─────────────────────────────────────────────────────────────┐
+│  Stage 6: PDF Generation                                     │
+│  • ReportLab + Pillow                                        │
+│  • Ghostscript compression                                   │
+└─────────────────────────────────────────────────────────────┘
+                              │
+                              ▼
+                    📖 Your Picture Book!
+```
 
 ---
 
@@ -260,11 +408,9 @@ Total time: ~15-20 minutes per episode.
 
 This project was inspired by research in video understanding and multimodal AI:
 
-- **[TimeChat](https://github.com/RenShuhuai-Andy/TimeChat)** (Ren et al., CVPR 2024) - Time-sensitive multimodal understanding for long videos. Influenced our approach to timestamp-aware video analysis.
-
-- **[VideoAgent](https://wxh1996.github.io/VideoAgent-Website/)** (Wang et al., 2024) - Agentic video understanding with iterative frame selection. Inspired our multi-phase analysis pipeline.
-
-- **[FrameExtractor](https://github.com/UpHash-Network/FrameExtractor)** - Intelligent frame extraction techniques. Influenced our VLM-based frame scoring approach.
+- **[TimeChat](https://github.com/RenShuhuai-Andy/TimeChat)** (Ren et al., CVPR 2024) - Time-sensitive multimodal understanding for long videos
+- **[VideoAgent](https://wxh1996.github.io/VideoAgent-Website/)** (Wang et al., 2024) - Agentic video understanding with iterative frame selection
+- **[FrameExtractor](https://github.com/UpHash-Network/FrameExtractor)** - Intelligent frame extraction techniques
 
 ---
 
