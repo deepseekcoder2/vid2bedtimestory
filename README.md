@@ -1,327 +1,273 @@
-# Bookify — Video → Children's Picture Book
+# Vid2BedtimeStory
 
-Convert video episodes into **print-ready A4 PDF** children's picture books (ages 5–8, ~22 pages).
+Convert children's TV episodes into **print-ready picture book PDFs**.
+
+Takes a video file with subtitles → outputs a ~30-page illustrated storybook for ages 5-8.
+
+---
+
+## What You Need
+
+| Requirement | Details |
+|-------------|---------|
+| **Python 3.10+** | `python3 --version` to check |
+| **FFmpeg** | Video processing (`brew install ffmpeg` on Mac, `apt install ffmpeg` on Linux) |
+| **Ghostscript** | PDF compression (`brew install ghostscript` on Mac, `apt install ghostscript` on Linux) |
+| **OpenRouter API Key** | Create account at [openrouter.ai](https://openrouter.ai), add credits, generate key |
+| **A franchise JSON file** | Character database for your show (see below) |
+
+### Platform Support
+
+| Platform | Status |
+|----------|--------|
+| **Mac (Apple Silicon, 32GB+ RAM)** | ✅ Works out of the box |
+| **Mac (Intel) / PC / Linux** | ⚠️ Requires code modification |
+
+**Why Mac Apple Silicon?** The video analysis stage runs a 32B parameter vision model locally to process your video file. Cloud APIs can't accept 500MB+ video uploads, so local inference is required.
+
+The codebase uses Apple's [MLX framework](https://github.com/ml-explore/mlx) for this. **Non-Mac users** would need to replace the MLX worker scripts (`mlx_worker.py`, `mlx_image_worker.py`, etc.) with a PyTorch/Transformers equivalent.
+
+### About API Costs
+
+This tool uses cloud AI models via OpenRouter:
+- **Claude Sonnet** for story writing  
+- **Qwen VL 235B** for frame selection
+
+You pay per use based on OpenRouter pricing. A typical 11-minute episode costs roughly $1-3 in API calls.
+
+---
 
 ## Quick Start
 
 ```bash
-# Setup
+# 1. Clone and setup
+git clone https://github.com/vid2bedtimestory/vid2bedtimestory.git
+cd vid2bedtimestory
 ./setup_mac.sh
 
-# Add API key
-echo "your-openrouter-key" > openrouterapikey.md
+# 2. Activate the virtual environment
+source .venv/bin/activate
 
-# Run with franchise database (recommended for known shows)
-python -m bookify build videos/episode.mkv --llm --franchise hot_wheels_lets_race
+# 3. Add your OpenRouter API key
+echo "sk-or-v1-your-key-here" > openrouterapikey.md
 
-# Run without franchise (discovery mode)
-python -m bookify build videos/episode.mkv --llm
-
-# List available franchises
-python -m bookify build videos/episode.mkv --franchise list
+# 4. Run it
+python -m vid2bedtimestory build videos/episode.mkv --franchise hot_wheels_lets_race
 ```
 
-## Pipeline Architecture
+---
 
-```
-┌─────────────────────────────────────────────────────────────────────────┐
-│                           BOOKIFY PIPELINE                               │
-├─────────────────────────────────────────────────────────────────────────┤
-│                                                                          │
-│  VIDEO FILE (.mkv)                                                       │
-│       │                                                                  │
-│       ▼                                                                  │
-│  ┌─────────────┐                                                         │
-│  │ SUBTITLES   │ Extract embedded subtitles                              │
-│  │ Stage       │ → subtitles.srt, subtitles.json                         │
-│  └──────┬──────┘                                                         │
-│         │                                                                │
-│         ▼                                                                │
-│  ┌─────────────┐     ┌──────────────────┐                               │
-│  │ ANALYSIS    │ ←── │ Franchise DB     │ (optional)                    │
-│  │ Stage       │     │ hot_wheels.json  │                               │
-│  └──────┬──────┘     └──────────────────┘                               │
-│         │                                                                │
-│         │  VideoAgent Pipeline:                                          │
-│         │  1. Sparse Survey (12 frames)                                  │
-│         │  2. Beat Detection (LLM)                                       │
-│         │  3. Deep Dive (VLM per beat)                                   │
-│         │  4. Character Extraction (DB or multi-frame consensus)         │
-│         │  5. Assembly                                                   │
-│         │                                                                │
-│         ▼                                                                │
-│  → analysis.json (characters, beats, moments)                            │
-│         │                                                                │
-│         ▼                                                                │
-│  ┌─────────────┐                                                         │
-│  │ STORY       │ LLM writes children's story                             │
-│  │ Stage       │ Uses: pronouns, catchphrases, story beats               │
-│  └──────┬──────┘                                                         │
-│         │                                                                │
-│         ▼                                                                │
-│  → story.md                                                              │
-│         │                                                                │
-│         ▼                                                                │
-│  ┌─────────────┐                                                         │
-│  │ PAGINATION  │ LLM splits into ~22 pages                               │
-│  │ Stage       │ Matches text to timestamps                              │
-│  └──────┬──────┘                                                         │
-│         │                                                                │
-│         ▼                                                                │
-│  → pages.json                                                            │
-│         │                                                                │
-│         ▼                                                                │
-│  ┌─────────────┐                                                         │
-│  │ SCREENSHOTS │ VLM scores candidate frames per page                    │
-│  │ Stage       │ Cloud VLM (60 concurrent) or local MLX-VLM              │
-│  └──────┬──────┘                                                         │
-│         │                                                                │
-│         ▼                                                                │
-│  → frames/page_001.png ... page_022.png                                  │
-│         │                                                                │
-│         ▼                                                                │
-│  ┌─────────────┐                                                         │
-│  │ PDF         │ Render final book                                       │
-│  │ Stage       │ A4, full-bleed images, typeset text                     │
-│  └──────┬──────┘                                                         │
-│         │                                                                │
-│         ▼                                                                │
-│  → out/book.pdf                                                          │
-│                                                                          │
-└─────────────────────────────────────────────────────────────────────────┘
-```
+## Preparing Your Video
 
-## Stages & Dependencies
+### Option A: Video with Embedded Subtitles (Recommended)
 
-| Stage | Inputs | Outputs | Description |
-|-------|--------|---------|-------------|
-| **SUBTITLES** | `video.mkv` | `subtitles.srt`, `subtitles.json` | Extract embedded subtitles |
-| **ANALYSIS** | `video.mkv`, `subtitles.json` | `analysis.json` | VideoAgent pipeline + character extraction |
-| **STORY** | `analysis.json`, `subtitles.json` | `story.md` | LLM writes children's narrative |
-| **PAGINATION** | `story.md`, `analysis.json` | `pages.json` | Split into pages with timestamps |
-| **SCREENSHOTS** | `video.mkv`, `pages.json`, `analysis.json` | `frames/`, `selected_frames.json` | VLM selects best frame per page |
-| **PDF** | `pages.json`, `frames/` | `out/book.pdf` | Render final PDF |
-
-**Makefile-style execution**: Stages only run if outputs are missing or inputs are newer.
-
-## Character Knowledge Base
-
-For known franchises, use a character database for **100% accurate pronouns**:
+Your video file must have subtitles embedded (common in `.mkv` files). The tool extracts them automatically.
 
 ```bash
-python -m bookify build video.mkv --llm --franchise hot_wheels_lets_race
+# Check if your video has subtitles
+ffprobe -v error -select_streams s -show_entries stream=index,codec_name:stream_tags=language -of csv=p=0 your_video.mkv
 ```
 
-### How It Works
+### Option B: Separate SRT File
 
-| Mode | Character Source | Pronoun Accuracy |
-|------|-----------------|------------------|
-| **With franchise DB** | Database lookup + alias/fuzzy matching | ✅ 100% |
-| **Without franchise** | Signal analysis + multi-frame VLM consensus | ~85-95% |
+If your video doesn't have embedded subtitles, provide an external `.srt` file:
 
-### Franchise Database Features
+```bash
+python -m vid2bedtimestory build videos/episode.mp4 --srt subtitles/episode.srt --franchise hot_wheels_lets_race
+```
+
+The SRT file must be timed to match the video.
+
+---
+
+## The Franchise File (Required)
+
+Every run requires a `--franchise` flag pointing to a character database. This ensures:
+- Correct character names and pronouns
+- Proper catchphrases in the story
+- Accurate character identification
+
+### Using an Existing Franchise
+
+```bash
+# List available franchises
+python -m vid2bedtimestory build video.mkv --franchise list
+
+# Use Hot Wheels (included)
+python -m vid2bedtimestory build video.mkv --franchise hot_wheels_lets_race
+```
+
+### Creating a New Franchise File
+
+Create `vid2bedtimestory/knowledge/franchises/your_show.json`:
 
 ```json
 {
+  "franchise_id": "your_show",
+  "franchise_name": "Your Show Name",
+  
   "characters": {
-    "coop": {
-      "display_name": "Coop",
-      "aliases": ["Coop", "the new kid"],
-      "pronoun": "he/him",
+    "main_character": {
+      "display_name": "Character Name",
+      "aliases": ["Nickname", "Other Name"],
+      "pronoun": "she/her",
       "role": "protagonist",
-      "visual_signature": { "hair": "spiky two-tone", "clothing": "teal hoodie" },
-      "catchphrases": ["Challenge accepted!"],
-      "relationships": { "dash_wheeler": "mentor" }
+      "traits": ["brave", "curious"],
+      "catchphrases": ["Let's do this!"],
+      "visual_signature": {
+        "hair": "long brown hair",
+        "clothing": "red jacket"
+      }
     }
   },
-  "known_non_characters": ["campers", "everyone", "crowd"]
+  
+  "known_non_characters": ["everyone", "crowd", "people"],
+  
+  "visual_style": {
+    "shot_preferences": ["Action shots with characters visible"],
+    "avoid": ["Extreme close-ups", "Dark scenes"]
+  },
+  
+  "pagination": {
+    "target_pages": 30,
+    "min_pages": 26,
+    "max_pages": 34,
+    "words_per_page_target": 40
+  },
+
+  "prompt_examples": {
+    "video_analysis": {
+      "visual_description": {
+        "good": "Character runs through forest, arms pumping, leaves flying past. Sunlight filters through trees.",
+        "bad": "Character runs."
+      }
+    },
+    "story_writing": {
+      "opening": "Example opening paragraph for your show's style...",
+      "climax": "Example climax paragraph..."
+    }
+  }
 }
 ```
 
-**Benefits:**
-- Correct pronouns (no VLM guessing)
-- Catchphrases injected into story
-- Excludes false positives ("Campers" won't become a character)
-- Fuzzy matching handles typos
+See `vid2bedtimestory/knowledge/franchises/hot_wheels_lets_race.json` for a complete example.
 
-### Adding a New Franchise
+---
 
-1. Create `bookify/knowledge/franchises/your_show.json`
-2. Follow the schema in `hot_wheels_lets_race.json`
-3. Use with `--franchise your_show`
-
-Or add to user config: `~/.bookify/franchises/your_show.json`
-
-## Character Detection (Discovery Mode)
-
-When no franchise DB is provided, the pipeline uses **signal analysis**:
-
-```
-Subtitle name "Coop"
-    │
-    ▼
-Signal Analysis:
-  - dialogue_count: 12 (speaks often)
-  - individual_actions: 8 ("Coop grabbed...")
-  - plural_usage: 0
-    │
-    ▼
-Score: 0.95 → HIGH CONFIDENCE CHARACTER
-    │
-    ▼
-Multi-frame VLM consensus (3 frames)
-    │
-    ▼
-Character profile with pronoun
-```
-
-**Signals analyzed:**
-- Dialogue attribution (`[Coop] Challenge accepted!`)
-- Individual actions (`Coop grabbed the wheel`)
-- Plural/collective usage (`Hey campers!`)
-- Frequency of mentions
-
-## CLI Reference
+## Common Commands
 
 ```bash
-python -m bookify build VIDEO [OPTIONS]
+# Basic run
+python -m vid2bedtimestory build video.mkv --franchise your_franchise
+
+# Fresh start (clear all cached work)
+python -m vid2bedtimestory build video.mkv --franchise your_franchise --fresh
+
+# Rebuild from a specific stage (reuse earlier work)
+python -m vid2bedtimestory build video.mkv --franchise your_franchise --rebuild-from story
+
+# See what would run without running it
+python -m vid2bedtimestory build video.mkv --franchise your_franchise --dry-run
+
+# Use external subtitles
+python -m vid2bedtimestory build video.mp4 --srt subs.srt --franchise your_franchise
 ```
 
-### Core Options
+---
 
-| Option | Default | Description |
-|--------|---------|-------------|
-| `--out PATH` | `out/book.pdf` | Output PDF path |
-| `--pages-target N` | `22` | Target page count |
-| `--pages-min N` | `18` | Minimum pages |
-| `--pages-max N` | `40` | Maximum pages |
-| `--llm / --no-llm` | `--no-llm` | Enable full LLM pipeline |
+## Output
 
-### Franchise & Character
-
-| Option | Description |
-|--------|-------------|
-| `--franchise ID` | Use character database (e.g., `hot_wheels_lets_race`) |
-| `--franchise list` | List available franchise databases |
-
-### Pipeline Control
-
-| Option | Description |
-|--------|-------------|
-| `--rebuild-from STAGE` | Force rebuild from stage onwards |
-| `--fresh` | Clean all artifacts before running |
-| `--dry-run` | Show execution plan without running |
-
-### VLM Backend
-
-| Option | Description |
-|--------|-------------|
-| `--vlm cloud` | Use OpenRouter cloud VLM (default, fast) |
-| `--vlm local` | Use local MLX-VLM (slower, free) |
-
-### Debugging
-
-| Option | Description |
-|--------|-------------|
-| `--keep-candidates` | Keep VLM candidate frames (~300MB) |
-| `--artifacts-dir PATH` | Custom artifacts directory |
-
-## Output Files
+After a successful run, you'll find:
 
 | File | Description |
 |------|-------------|
-| `out/book.pdf` | Final print-ready A4 PDF |
-| `artifacts/subtitles.srt` | Extracted subtitles |
-| `artifacts/subtitles.json` | Parsed subtitle segments |
-| `artifacts/analysis.json` | Video analysis (characters, beats, moments) |
+| `out/<video_name>.pdf` | Your picture book! |
+| `out/<video_name>-compress.pdf` | Smaller version for sharing |
 | `artifacts/story.md` | Generated story text |
-| `artifacts/pages.json` | Page structure with timestamps |
-| `artifacts/frames/` | Selected screenshot frames |
-| `artifacts/selected_frames.json` | Frame selection metadata |
+| `artifacts/frames/` | Selected screenshots |
 
-## Prerequisites
+---
 
-- **Mac**: Apple Silicon (M2/M3/M4) with 16GB+ RAM
-- **Python**: 3.10+
-- **FFmpeg**: `brew install ffmpeg`
-- **OpenRouter API Key**: [openrouter.ai](https://openrouter.ai)
+## Options Reference
 
-Optional (for local VLM):
-- **MLX-VLM**: `pip install mlx-vlm`
-- **32GB+ RAM** recommended
+| Option | Description |
+|--------|-------------|
+| `--franchise ID` | **Required.** Character database to use |
+| `--srt PATH` | External SRT subtitle file |
+| `--out PATH` | Output PDF path (default: `out/<video>.pdf`) |
+| `--pages-target N` | Target page count (default: from franchise) |
+| `--subtitle-context N` | Subtitle lines for gap detection (default: 50, see note below) |
+| `--rebuild-from STAGE` | Force rebuild from: `subtitles`, `analysis`, `story`, `pagination`, `screenshots`, `pdf` |
+| `--fresh` | Delete all artifacts and start over |
+| `--dry-run` | Show plan without executing |
+| `--keep-candidates` | Keep candidate frames for debugging |
+| `--artifacts-dir PATH` | Custom artifacts directory |
 
-## Project Structure
+### Note on Video Length
 
-```
-nathanbook/
-├── bookify/
-│   ├── cli.py                 # CLI entry point
-│   ├── config.py              # Model configuration
-│   ├── pipeline.py            # Stage dependency management
-│   ├── prompts.py             # LLM prompts (story, pagination)
-│   ├── llm.py                 # Story writing, pagination
-│   ├── vlm.py                 # VLM scoring (cloud + local)
-│   ├── models.py              # Pydantic schemas
-│   ├── ffmpeg.py              # FFmpeg wrappers
-│   ├── pdf.py                 # PDF rendering
-│   ├── screenshot_selection.py # VLM-based frame selection
-│   ├── knowledge/             # Character databases
-│   │   ├── loader.py          # Franchise DB loader
-│   │   └── franchises/        # Franchise JSON files
-│   │       └── hot_wheels_lets_race.json
-│   └── video_analysis/        # VideoAgent pipeline
-│       ├── __init__.py        # analyze_video_v2()
-│       ├── character_signals.py # Signal analysis
-│       ├── types.py           # Internal types
-│       ├── prompts.py         # VLM prompts
-│       └── phases/            # Pipeline phases
-│           ├── sparse_survey.py
-│           ├── beat_detection.py
-│           ├── deep_dive.py
-│           └── character_extraction.py
-├── videos/                    # Source videos
-├── artifacts/                 # Generated intermediates
-├── out/                       # Generated PDFs
-└── reference/                 # PRD, documentation
-```
+This tool was tested primarily on **10-11 minute** episodes. The `--subtitle-context` setting controls how much dialogue the AI sees when detecting gaps in video coverage.
 
-## Configuration
-
-Edit `bookify/config.py`:
-- `creative_model`: OpenRouter model for story/pagination
-- `vlm_cloud_model`: Cloud VLM for frame scoring
-- `vlm_cloud_max_concurrent`: Parallel requests (default: 60)
-- `vlm_min_score_threshold`: Minimum VLM score for frame selection (default: 5.0)
-
-API key location: `openrouterapikey.md` (first non-comment line)
-
-## Examples
+For **longer episodes** (15+ minutes), you may need to increase this value:
 
 ```bash
-# Full pipeline with Hot Wheels character database
-python -m bookify build videos/episode101-001.mkv --llm --franchise hot_wheels_lets_race
+# For a 20-minute episode
+python -m vid2bedtimestory build long_episode.mkv --franchise your_show --subtitle-context 100
 
-# Fresh run (clean all artifacts first)
-python -m bookify build videos/episode.mkv --llm --fresh
-
-# Rebuild from story stage (reuse analysis)
-python -m bookify build videos/episode.mkv --llm --rebuild-from story
-
-# Check what would run without executing
-python -m bookify build videos/episode.mkv --llm --dry-run
-
-# Use local VLM instead of cloud
-python -m bookify build videos/episode.mkv --llm --vlm local
+# For a 30-minute episode  
+python -m vid2bedtimestory build long_episode.mkv --franchise your_show --subtitle-context 150
 ```
 
-## Performance
+A rough guideline: ~5 lines per minute of video (e.g., 20 minutes → 100 lines).
 
-| Stage | Time (typical) | Notes |
-|-------|----------------|-------|
-| Subtitles | ~5s | FFmpeg extraction |
-| Analysis | ~3-5 min | VLM calls for frames |
-| Story | ~30s | Single LLM call |
-| Pagination | ~30s | Single LLM call |
-| Screenshots | ~8-12 min | 41 frames × 20 pages with cloud VLM |
-| PDF | ~10s | Rendering |
-| **Total** | ~15-20 min | With cloud VLM |
+---
+
+## Troubleshooting
+
+### "No subtitle stream found"
+Your video doesn't have embedded subtitles. Use `--srt` with an external subtitle file.
+
+### "Franchise not found"
+Run `--franchise list` to see available options, or create your own JSON file.
+
+### "openrouterapikey.md not found"
+Create the file with your API key:
+```bash
+echo "sk-or-v1-your-key-here" > openrouterapikey.md
+```
+
+### Pipeline seems stuck
+The video analysis stage can take 3-5 minutes. Story and pagination are faster (~30 seconds each). Frame selection is the longest (8-12 minutes).
+
+### Out of memory
+This tool requires 32GB RAM. Close other applications if you're running low.
+
+---
+
+## How It Works (Overview)
+
+1. **Subtitles** - Extract dialogue from video
+2. **Analysis** - Local AI scans video frames for scenes and characters
+3. **Story** - Cloud AI writes a children's story based on analysis
+4. **Pagination** - Split story into ~30 pages
+5. **Screenshots** - Cloud AI picks the best frame for each page
+6. **PDF** - Render the final book
+
+Total time: ~15-20 minutes per episode.
+
+---
+
+## Acknowledgments
+
+This project was inspired by research in video understanding and multimodal AI:
+
+- **[TimeChat](https://github.com/RenShuhuai-Andy/TimeChat)** (Ren et al., CVPR 2024) - Time-sensitive multimodal understanding for long videos. Influenced our approach to timestamp-aware video analysis.
+
+- **[VideoAgent](https://wxh1996.github.io/VideoAgent-Website/)** (Wang et al., 2024) - Agentic video understanding with iterative frame selection. Inspired our multi-phase analysis pipeline.
+
+- **[FrameExtractor](https://github.com/UpHash-Network/FrameExtractor)** - Intelligent frame extraction techniques. Influenced our VLM-based frame scoring approach.
+
+---
+
+## License
+
+MIT License - see [LICENSE](LICENSE) file.

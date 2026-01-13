@@ -1,0 +1,555 @@
+{
+  "franchise_id": "hot_wheels_lets_race",
+  "franchise_name": "Hot Wheels Let's Race",
+  
+  "characters": {
+    "coop": {
+      "display_name": "Coop",
+      "aliases": ["Coop", "the new kid"],
+      "pronoun": "he/him",
+      "role": "protagonist",
+      
+      "visual_signature": {
+        "hair": "spiky two-tone hair, blonde on top with dark brown underneath",
+        "skin_tone": "medium brown",
+        "eyes": "brown, large and expressive",
+        "clothing": "teal and orange hooded jacket with Hot Wheels logo, checkered pattern on sleeves",
+        "age": "preteen (10-12)",
+        "build": "average, energetic posture",
+        "distinctive": "determined expression, often smiling"
+      },
+      
+      "traits": ["determined", "dreamy", "brave", "optimistic", "imaginative"],
+      "catchphrases": ["Challenge accepted!", "Kick it into high gear!", "We've got the drive here!"],
+      "speech_style": "enthusiastic, exclamatory, uses racing metaphors",
+      
+      "relationships": {
+        "dash_wheeler": "mentor",
+        "coop_dad": "father",
+        "coop_mom": "mother",
+        "mac": "friend",
+        "spark": "friend",
+        "brights": "friend",
+        "axle_spoiler": "rival",
+        "sidecar": "friend",
+        "professor_rearview": "nemesis"
+      }
+    },
+    
+    "dash_wheeler": {
+      "display_name": "Dash Wheeler",
+      "aliases": ["Dash", "Dash Wheeler"],
+      "pronoun": "she/her",
+      "role": "mentor",
+      
+      "visual_signature": {
+        "hair": "short brown hair, sporty cut",
+        "skin_tone": "medium brown",
+        "eyes": "confident, warm",
+        "clothing": "red cape, white racing suit with blue accents and star logo",
+        "age": "adult (30s)",
+        "build": "athletic, confident stance with hands on hips",
+        "distinctive": "leader presence, red cape flows behind her"
+      },
+      
+      "traits": ["confident", "supportive", "experienced", "fun-loving", "encouraging"],
+      "catchphrases": ["Hot Wheels, let's race!", "Who's ready to race?!", "Behold, the wonders of the Ultimate Garage!", "GO ! , GO FASTER ! FASTER !"],
+      "speech_style": "encouraging, leader-like, motivational",
+      
+      "relationships": {
+        "coop": "mentee",
+        "spark": "camper",
+        "mac": "camper",
+        "brights": "camper",
+        "axle_spoiler": "camper",
+        "sidecar": "camper",
+        "squeakers": "assistant",
+        "professor_rearview": "rival"
+      }
+    },
+    
+    "spark": {
+      "display_name": "Spark",
+      "aliases": ["Spark"],
+      "pronoun": "she/her",
+      "role": "ally",
+      
+      "visual_signature": {
+        "hair": "long pink hair, vibrant and flowing",
+        "skin_tone": "light",
+        "eyes": "bright, energetic",
+        "clothing": "white racing suit with colorful accents",
+        "age": "preteen (10-12)",
+        "build": "slim, athletic",
+        "distinctive": "pink hair stands out, optimistic expression"
+      },
+      
+      "traits": ["energetic", "optimistic", "team-oriented", "quick-thinking", "inventor"],
+      "catchphrases": ["Revving up our own imaginations!"],
+      "speech_style": "upbeat, supportive",
+      
+      "relationships": {
+        "coop": "friend",
+        "mac": "friend",
+        "brights": "friend",
+        "dash_wheeler": "mentor"
+      }
+    },
+    
+    "mac": {
+      "display_name": "Mac",
+      "aliases": ["Mac"],
+      "pronoun": "he/him",
+      "role": "ally",
+      
+      "visual_signature": {
+        "hair": "short black hair",
+        "skin_tone": "dark brown",
+        "eyes": "friendly",
+        "clothing": "green racing suit",
+        "age": "preteen (10-12)",
+        "build": "stocky, strong",
+        "distinctive": "friendly demeanor, reassuring presence"
+      },
+      
+      "traits": ["energetic", "competitive", "loyal", "supportive", "humorous"],
+      "catchphrases": ["Don't worry, dude"],
+      "speech_style": "casual, reassuring, uses 'dude'",
+      
+      "relationships": {
+        "coop": "friend",
+        "spark": "friend",
+        "brights": "friend"
+      }
+    },
+    
+    "brights": {
+      "display_name": "Brights",
+      "aliases": ["Brights"],
+      "pronoun": "she/her",
+      "role": "ally",
+      
+      "visual_signature": {
+        "hair": "colorful, tech-inspired style",
+        "skin_tone": "light",
+        "eyes": "focused, intelligent",
+        "clothing": "tech-themed outfit with bright colors",
+        "age": "preteen (10-12)",
+        "build": "average",
+        "distinctive": "often near Track Builder controls, focused expression"
+      },
+      
+      "traits": ["intelligent", "focused", "resourceful", "tech-savvy"],
+      "catchphrases": ["Track Builder, go!"],
+      "speech_style": "precise, technical, excited about gadgets",
+      
+      "relationships": {
+        "coop": "friend",
+        "spark": "friend",
+        "mac": "friend",
+        "squeakers": "works with"
+      }
+    },
+    
+    "axle_spoiler": {
+      "display_name": "Axle Spoiler",
+      "aliases": ["Axle", "Axle Spoiler"],
+      "pronoun": "he/him",
+      "role": "antagonist",
+      
+      "visual_signature": {
+        "hair": "styled, slicked back",
+        "skin_tone": "light",
+        "eyes": "competitive, sometimes scheming",
+        "clothing": "racing suit with darker colors",
+        "age": "preteen (10-12)",
+        "build": "athletic",
+        "distinctive": "smirk, competitive stance"
+      },
+      
+      "traits": ["competitive", "confident", "mischievous", "jealous"],
+      "catchphrases": ["Gear selected!"],
+      "speech_style": "boastful, competitive, sometimes mean",
+      
+      "relationships": {
+        "coop": "rival",
+        "sidecar": "friend",
+        "professor_rearview": "occasional ally",
+        "striker_spoiler": "relative"
+      }
+    },
+    
+    "sidecar": {
+      "display_name": "Sidecar",
+      "aliases": ["Sidecar"],
+      "pronoun": "he/him",
+      "role": "neutral",
+      
+      "visual_signature": {
+        "hair": "varies",
+        "skin_tone": "medium",
+        "clothing": "racing gear",
+        "age": "preteen (10-12)",
+        "build": "average",
+        "distinctive": "often seen with Axle"
+      },
+      
+      "traits": ["playful", "follower", "supportive of Axle"],
+      "catchphrases": [],
+      "speech_style": "follows Axle's lead",
+      
+      "relationships": {
+        "axle_spoiler": "friend"
+      }
+    },
+    
+    "squeakers": {
+      "display_name": "Squeakers",
+      "aliases": ["Squeakers"],
+      "pronoun": "it/its",
+      "role": "ally",
+      
+      "visual_signature": {
+        "body": "small red robot",
+        "eyes": "digital display eyes",
+        "clothing": "none (robot)",
+        "age": "n/a (robot)",
+        "build": "small, compact",
+        "distinctive": "beeps and squeaks, helpful movements"
+      },
+      
+      "traits": ["helpful", "mechanical", "loyal", "quirky"],
+      "catchphrases": [],
+      "speech_style": "beeps and squeaks (non-verbal)",
+      
+      "relationships": {
+        "dash_wheeler": "assistant to",
+        "brights": "works with"
+      }
+    },
+    
+    "coop_dad": {
+      "display_name": "Coop's Dad",
+      "aliases": ["Dad", "Coop's Dad", "Coop's father"],
+      "pronoun": "he/him",
+      "role": "mentor",
+      
+      "visual_signature": {
+        "hair": "short brown hair",
+        "facial_hair": "full beard",
+        "skin_tone": "medium",
+        "eyes": "warm, supportive",
+        "clothing": "blue baseball cap with Hot Wheels logo, brown button-up shirt with leaf pattern",
+        "age": "adult (40s)",
+        "build": "stocky, dad bod",
+        "distinctive": "glasses, warm smile"
+      },
+      
+      "traits": ["supportive", "proud", "wise", "encouraging"],
+      "catchphrases": ["A Hot Wheels Racer always says, 'Challenge accepted!'", "If anyone does, it's you"],
+      "speech_style": "fatherly, encouraging, warm",
+      
+      "relationships": {
+        "coop": "son",
+        "coop_mom": "spouse"
+      }
+    },
+    
+    "coop_mom": {
+      "display_name": "Coop's Mom",
+      "aliases": ["Mom", "Coop's Mom", "Coop's mother"],
+      "pronoun": "she/her",
+      "role": "neutral",
+      
+      "visual_signature": {
+        "age": "adult (40s)",
+        "distinctive": "supportive parent"
+      },
+      
+      "traits": ["supportive", "caring"],
+      "catchphrases": [],
+      "speech_style": "motherly, warm",
+      
+      "relationships": {
+        "coop": "son",
+        "coop_dad": "spouse"
+      }
+    },
+    
+    "professor_rearview": {
+      "display_name": "Professor Rearview",
+      "aliases": ["Professor Rearview", "the Professor"],
+      "pronoun": "he/him",
+      "role": "villain",
+      
+      "visual_signature": {
+        "hair": "wild white hair",
+        "facial_hair": "long mustache",
+        "skin_tone": "pale",
+        "eyes": "scheming, intense",
+        "clothing": "lab coat over dark clothing",
+        "age": "adult (50s)",
+        "build": "tall, imposing",
+        "distinctive": "mad scientist appearance"
+      },
+      
+      "traits": ["scheming", "intelligent", "villainous", "competitive", "inventor"],
+      "catchphrases": [],
+      "speech_style": "dramatic, villainous",
+      
+      "relationships": {
+        "coop": "nemesis",
+        "dash_wheeler": "rival",
+        "cruise_rearview": "relative"
+      }
+    },
+    
+    "cruise_rearview": {
+      "display_name": "Cruise Rearview",
+      "aliases": ["Cruise"],
+      "pronoun": "she/her",
+      "role": "villain",
+      
+      "visual_signature": {
+        "hair": "blonde, styled",
+        "clothing": "racing suit with Rearview motifs",
+        "age": "adult",
+        "distinctive": "confident, villainous smirk"
+      },
+      
+      "traits": ["scheming", "competitive", "villainous"],
+      "catchphrases": [],
+      "speech_style": "sharp, confident",
+      
+      "relationships": {
+        "professor_rearview": "relative"
+      }
+    },
+    
+    "speedy_getaway": {
+      "display_name": "Speedy Getaway",
+      "aliases": ["Speedy"],
+      "pronoun": "he/him",
+      "role": "recurring",
+      
+      "visual_signature": {
+        "clothing": "distinctive racing gear",
+        "distinctive": "speed-focused appearance"
+      },
+      
+      "traits": ["fast", "focused", "skilled"],
+      "catchphrases": [],
+      "speech_style": "quick, energetic",
+      
+      "relationships": {}
+    },
+    
+    "striker_spoiler": {
+      "display_name": "Striker Spoiler",
+      "aliases": ["Striker"],
+      "pronoun": "he/him",
+      "role": "recurring",
+      
+      "visual_signature": {
+        "distinctive": "tough, imposing racer"
+      },
+      
+      "traits": ["tough", "intimidating", "skilled"],
+      "catchphrases": [],
+      "speech_style": "gruff, direct",
+      
+      "relationships": {
+        "axle_spoiler": "relative"
+      }
+    }
+  },
+  
+  "vehicles": {
+    "baja_truck": {
+      "car_power": "Baja Bounce: Tires expand, allowing it to jump even higher.",
+      "style": "Off-road desert racer",
+      "featured_in": "Keep On Monster Truckin'"
+    },
+    "shark_bite": {
+      "car_power": "Mega Crunch: Delivers a large crunch, tearing through tough obstacles.",
+      "style": "Shark-themed street beast",
+      "collection": "2016 Street Beasts"
+    },
+    "roller_toaster": {
+      "car_power": "Toast Attack: Shoots slices of bread to hit targets.",
+      "style": "Toaster-themed fast foodie car",
+      "collection": "2020 Fast Foodie"
+    },
+    "venemy": {
+      "full_name": "VENEMY™ HTN81",
+      "origin": "Pizza Slam Cobra Attack",
+      "style": "Cobra-themed sleek sports car"
+    }
+  },
+
+  "locations": {
+    "ultimate_garage": {
+      "description": "A massive multi-level garage where the racers live and train.",
+      "features": ["hundreds of tracks", "car wash", "training simulator"]
+    },
+    "pizza_slam": {
+      "description": "A pizza-themed race track featuring a giant cobra obstacle."
+    }
+  },
+
+  "known_non_characters": [
+    "campers",
+    "everyone",
+    "all",
+    "crowd",
+    "kids",
+    "team",
+    "racers",
+    "reporter",
+    "announcer",
+    "narrator",
+    "monster truck",
+    "food truck",
+    "t-rex transporter",
+    "ultimate garage",
+    "track builder",
+    "hot wheels city"
+  ],
+
+  "visual_style": {
+    "shot_preferences": [
+      "Wide action shots showing full vehicles in motion",
+      "Dynamic angles during racing/chasing/jumping sequences", 
+      "Include environment (orange tracks, city, garage) in background",
+      "Vehicle + character together, not just character alone",
+      "Peak action moments: mid-jump, flames shooting, car soaring"
+    ],
+    "avoid": [
+      "Cockpit-only views where vehicle exterior is not visible",
+      "Character close-ups during action scenes",
+      "Static portraits when text describes motion/action",
+      "Shots where the car is cropped or barely visible"
+    ],
+    "key_visual_elements": ["vehicles", "orange tracks", "flames", "jumps", "speed effects", "Hot Wheels cars"],
+    "action_to_character_ratio": "60% action/vehicle shots, 40% character shots"
+  },
+
+  "pagination": {
+    "target_pages": 30,
+    "min_pages": 28,
+    "max_pages": 34,
+    "words_per_page_target": 40,
+    "sentences_per_paragraph_max": 3
+  },
+
+  "scoring_guidance": "This is an ACTION franchise. Frames showing full vehicles in motion are preferred over character close-ups. Wide shots of cars racing, jumping, or flying should score higher. Cockpit-only views should score lower unless specifically needed.",
+
+  "prompt_examples": {
+    "video_analysis": {
+      "visual_description": {
+        "good": "Close-up of Coop gripping the GT Scorcher's steering wheel, knuckles white with tension. His eyes narrow with determination. Cut to wide shot: the sleek orange car with flame decals rockets toward a massive loop-de-loop. Tires squeal against the track. The car launches off the ramp, flames shooting from the exhaust, soaring over a 50-foot gap. Coop's face shifts from concentration to pure joy, mouth open in a victory scream. Below, the crowd of campers gasp, hands raised. The car lands with a skid, kicking up a cloud of dust.",
+        "bad": "Coop races his car and jumps"
+      },
+      "frame_description": {
+        "good": "A boy with blonde spiky hair in a blue and orange racing suit grips a steering wheel, eyes wide with determination. He's inside a sleek orange car with flame decals on a futuristic orange track. A holographic sign reads 'LAP 3'.",
+        "bad": "A kid drives a car on a track."
+      },
+      "character_appearance_example": "Dash Wheeler - adult woman with short brown hair, wearing white racing suit with blue accents"
+    },
+
+    "story_writing": {
+      "opening": "It was another awesome day in Hot Wheels City- the city that never breaks! Coop drove his favorite car, the GT Scorcher, in the race of the century. He hit a ramp, soared through the air, and crossed the finish line as the crowd went wild.",
+      "setup": "Coop joined the other kids as a shiny green car, the Twin Mill, skidded to a stop. Out hopped Dash Wheeler, leader of the Ultimate Garage! She welcomed all six kids to camp: Spark, Mac, Brights, Axle, Sidecar, and Coop. 'You six were chosen because you have what it takes to be the next generation of Hot Wheels Racers!' Dash told them.",
+      "problem": "'Oh, no!' Coop cried. The tire rolled across the Hot Wheels Lab and out the open window! 'I'm sure that happens all the time!' Mac said, trying to make Coop feel better. 'Breaking news!' said a reporter on TV. 'A tire has been launched into Hot Wheels City for the very first time!'",
+      "climax": "The GT Scorcher's tires squealed as it rocketed forward, with flames shooting out the back. Then it hit a ramp and began to soar over the gap in the tracks like in Coop's daydream. 'YEAH!' he screamed in delight. [bold]'Super Speed Burst activate! Go, Hot Wheels!'[/bold]",
+      "resolution": "'Smart move choosing the GT Scorcher,' Dash told Coop. 'You picked a car fast enough to catch that wacky wheel.' 'The key was to never give up,' Coop declared. Plus, he had help from his super awesome new friends!"
+    },
+
+    "pagination": {
+      "moment_matching": [
+        {
+          "story_text": "The tire bounced into the city, causing chaos",
+          "moment_description": "runaway tire rolling through Hot Wheels City"
+        },
+        {
+          "story_text": "Coop activated super speed and caught the tire",
+          "moment_description": "GT Scorcher using Super Speed Burst power"
+        },
+        {
+          "story_text": "The team celebrated together",
+          "moment_description": "campers and Dash Wheeler celebration"
+        }
+      ]
+    },
+
+    "visual_targets": {
+      "examples": [
+        {
+          "page_text": "The car soared through the air with flames shooting",
+          "visual_target": "The GT-Scorcher flying through the air with flames from the exhaust"
+        },
+        {
+          "page_text": "Coop's heart raced as he looked at the button",
+          "visual_target": "Coop looking at the glowing button on the dashboard"
+        },
+        {
+          "page_text": "The team celebrated together",
+          "visual_target": "The campers and Dash Wheeler celebrating together"
+        }
+      ]
+    },
+
+    "deep_dive": {
+      "environment_examples": ["orange track rails", "neon signs", "checkered flags", "Ultimate Garage", "Hot Wheels City skyline", "turbo launcher"],
+      "motion_examples": ["speed lines", "blur effects", "tire smoke", "flames from exhaust", "car soaring", "skidding"],
+      "color_examples": ["orange flames shooting from exhaust", "blue sparks from wheels", "teal and orange jacket", "sleek orange car"],
+      "sound_examples": ["tires squealing", "crowd cheering", "engine roaring", "wind rushing", "metal clanking"]
+    },
+
+    "beat_detection": {
+      "examples": [
+        {
+          "beat_type": "setup",
+          "summary": "Coop and his dad arrive at Ultimate Garage Racing Camp",
+          "anchor_dialogue": ["I hope I have what it takes to be a real Hot Wheels Racer", "A Hot Wheels Racer always says, Challenge accepted!"]
+        },
+        {
+          "beat_type": "inciting_incident", 
+          "summary": "Coop accidentally knocks a tire that rolls out the window into the city",
+          "anchor_dialogue": ["Oh, no!", "A tire has been launched into Hot Wheels City!"]
+        },
+        {
+          "beat_type": "climax",
+          "summary": "Coop remembers every car has a special power and activates Super Speed Burst",
+          "anchor_dialogue": ["Wait... Power!", "Super Speed Burst activate! Go, Hot Wheels!"]
+        }
+      ]
+    }
+  },
+
+  "style_rules": {
+    "bold_usage": {
+      "rule": "Use [bold] tags ONLY for franchise catchphrases and power activations",
+      "examples": [
+        "[bold]'Challenge accepted!'[/bold]",
+        "[bold]'Track Builder, go!'[/bold]",
+        "[bold]'Super Speed Burst activate! Go, Hot Wheels!'[/bold]",
+        "[bold]'Hot Wheels, let's race!'[/bold]"
+      ],
+      "never_for": ["general excitement", "character names", "random emphasis", "ordinary dialogue"]
+    },
+    "paragraph_style": {
+      "sentences_per_paragraph": "2-4 sentences",
+      "dialogue_pattern": "Quote always followed by speaker identification and action verb (e.g., 'said Coop', 'Dash told them', 'Mac chimed in')",
+      "ending_exclamations": ["Oh, no!", "Uh, oh!", "YEAH!", "Woo-hoo!"]
+    },
+    "vocabulary": {
+      "preferred_words": ["awesome", "huge smile", "wailed", "gasped", "rocketed", "soared", "cheered", "exclaimed"],
+      "domain_terms": ["track", "ramp", "turbo", "speed burst", "pedal to the metal", "Hot Wheels Racer", "campers", "Track Builder", "Ultimate Garage"]
+    },
+    "pronoun_example": {
+      "wrong": "Dash Wheeler waved his arms.",
+      "right": "Dash Wheeler waved her arms."
+    }
+  }
+}

@@ -1,0 +1,31 @@
+# ============================================
+# Vid2BedtimeStory Requirements
+# ============================================
+
+# Core Pipeline
+# ============================================
+reportlab>=4.0.0        # PDF generation
+pillow>=10.0.0          # Image processing
+srt>=3.5.0              # Subtitle parsing
+pydantic>=2.0.0         # Data validation
+typer>=0.9.0            # CLI framework
+rich>=13.0.0            # Terminal output formatting
+requests>=2.31.0        # HTTP client for OpenRouter API
+
+# Frame Selection
+# ============================================
+opencv-python>=4.8.0    # Video frame extraction
+numpy>=1.24.0           # Array operations
+
+# Video Analysis (Apple Silicon only)
+# ============================================
+# These packages only work on Mac with Apple Silicon.
+# Non-Mac users: comment these out and modify the MLX worker scripts.
+mlx>=0.18.0             # Apple MLX framework
+mlx-vlm>=0.1.0          # Vision-Language Models on MLX
+
+# ============================================
+# Development/Testing (optional)
+# ============================================
+# pytest>=8.0.0
+

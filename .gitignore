@@ -1,0 +1,142 @@
+# =============================================================================
+# PYTHON
+# =============================================================================
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Virtual environments
+.env
+.venv
+env/
+venv/
+ENV/
+
+# =============================================================================
+# VID2BEDTIMESTORY CACHES & GENERATED FILES
+# =============================================================================
+
+# Root cache (embedding index - can be 1000+ frames)
+cache/
+
+# Artifacts cache (VLM captions, extracted frames)
+artifacts/cache/
+
+# Extracted frames for book pages
+artifacts/frames/
+
+# Temporary segment files
+artifacts/segments/
+
+# Generated analysis/story files (regenerate with pipeline)
+# Uncomment if you don't want to track these:
+# artifacts/analysis.json
+# artifacts/story.md
+# artifacts/pages.json
+# artifacts/selected_frames.json
+# artifacts/subtitles.json
+# artifacts/subtitles.srt
+
+# Output PDFs (large binary files)
+out/
+*.pdf
+
+# =============================================================================
+# VIDEOS (too large for git)
+# =============================================================================
+videos/
+*.mkv
+*.mp4
+*.avi
+*.mov
+*.webm
+*.m4v
+
+# =============================================================================
+# IMAGES (generated, can be regenerated)
+# =============================================================================
+*.png
+*.jpg
+*.jpeg
+*.gif
+*.bmp
+*.tiff
+
+# Exception: keep reference images if any
+!reference/**/*.png
+!reference/**/*.jpg
+
+# =============================================================================
+# SECRETS & API KEYS
+# =============================================================================
+openrouterapikey.md
+.env
+.env.local
+.env.*.local
+*.key
+*.pem
+secrets.json
+api_keys.json
+
+# =============================================================================
+# IDE & EDITOR
+# =============================================================================
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+.cursor/
+
+# =============================================================================
+# OS FILES
+# =============================================================================
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# =============================================================================
+# TESTING & LOGS
+# =============================================================================
+tests/story_quality/outputs/
+*.log
+build_log.txt
+.coverage
+htmlcov/
+.pytest_cache/
+.tox/
+
+# =============================================================================
+# JUPYTER NOTEBOOKS (if any)
+# =============================================================================
+.ipynb_checkpoints/
+*.ipynb
+
+# =============================================================================
+# MLX MODEL CACHE (if stored locally)
+# =============================================================================
+models/
+*.safetensors
+*.gguf
+*.bin

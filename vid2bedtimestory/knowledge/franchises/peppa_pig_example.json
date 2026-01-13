@@ -1,0 +1,42 @@
+{
+  "franchise_id": "peppa_pig",
+  "franchise_name": "Peppa Pig",
+  "characters": {
+    "peppa": {
+      "display_name": "Peppa Pig",
+      "pronoun": "she/her",
+      "role": "protagonist",
+      "traits": ["cheeky", "energetic", "loveable"],
+      "catchphrases": ["I'm Peppa Pig!", "Hee hee!"]
+    },
+    "george": {
+      "display_name": "George Pig",
+      "pronoun": "he/him",
+      "role": "ally",
+      "traits": ["cries easily", "loves dinosaurs"],
+      "catchphrases": ["Dinosaur! Grrr!"]
+    }
+  },
+  "locations": {
+    "peppas_house": {
+      "name": "Peppa's House",
+      "description": "A yellow house on top of a grassy hill."
+    },
+    "the_playgroup": {
+      "name": "The Playgroup",
+      "description": "Where Peppa and her friends go to learn and play."
+    }
+  },
+  "activities": {
+    "muddy_puddles": {
+      "name": "Jumping in Muddy Puddles",
+      "description": "Everyone loves jumping up and down in muddy puddles!"
+    }
+  },
+  "family_dynamics": {
+    "pig_family": {
+      "description": "Peppa lives with Mummy Pig, Daddy Pig, and her little brother George."
+    }
+  }
+}
+
