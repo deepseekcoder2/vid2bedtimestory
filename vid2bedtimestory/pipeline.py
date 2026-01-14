@@ -45,6 +45,7 @@ class Stage(str, Enum):
     SUBTITLES = "subtitles"
     ANALYSIS = "analysis"
     STORY = "story"
+    GAP_FILL = "gap_fill"  # VideoAgent-style iterative retrieval
     PAGINATION = "pagination"
     SCREENSHOTS = "screenshots"
     PDF = "pdf"
@@ -86,15 +87,21 @@ def _get_stage_specs() -> dict[Stage, StageSpec]:
             outputs=lambda v, a: [a / "story.md"],
             description="Generate story from analysis",
         ),
+        Stage.GAP_FILL: StageSpec(
+            name=Stage.GAP_FILL,
+            inputs=lambda v, a: [v, a / "story.md", a / "analysis.json", a / "subtitles.json"],
+            outputs=lambda v, a: [a / "analysis_enriched.json"],
+            description="Fill moment gaps via VideoAgent-style retrieval",
+        ),
         Stage.PAGINATION: StageSpec(
             name=Stage.PAGINATION,
-            inputs=lambda v, a: [a / "story.md", a / "analysis.json"],
+            inputs=lambda v, a: [a / "story.md", a / "analysis_enriched.json"],
             outputs=lambda v, a: [a / "pages.json"],
             description="Paginate story into book layout",
         ),
         Stage.SCREENSHOTS: StageSpec(
             name=Stage.SCREENSHOTS,
-            inputs=lambda v, a: [v, a / "pages.json", a / "analysis.json"],
+            inputs=lambda v, a: [v, a / "pages.json", a / "analysis_enriched.json"],
             outputs=lambda v, a: [a / "selected_frames.json", a / "frames"],
             description="Select and extract screenshot frames",
         ),
@@ -302,6 +309,7 @@ def clean_all_artifacts(artifacts_dir: Path, verbose: bool = True) -> None:
         "subtitles.srt",
         "subtitles.json", 
         "analysis.json",
+        "analysis_enriched.json",  # GAP_FILL output
         "story.md",
         "pages.json",
         "selected_frames.json",

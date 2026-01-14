@@ -187,7 +187,9 @@ EPISODE DIALOGUE (use actual lines where they fit naturally)
 
 ═══════════════════════════════════════════════════════════════════════════════
 
-Write the story now. Match the example's style exactly."""
+Write the story now. Match the example's style exactly.
+
+REMINDER: ~1,100-1,200 words total (~28-32 paragraphs)."""
 
 
 # =============================================================================

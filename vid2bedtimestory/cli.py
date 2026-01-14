@@ -93,6 +93,7 @@ from .llm import write_story, paginate_story, enforce_alternating_layout, enforc
 from .models import AnalysisResult, BookSpec, SubtitleSegment
 from .pdf import render_pdf, PDFWriteError
 from .pipeline import Stage, STAGE_SPECS, should_run_stage, print_pipeline_plan, parse_stage, clean_stale_artifacts, clean_all_artifacts
+from .moment_gap_fill import fill_moment_gaps
 from .subtitles import parse_srt_file
 from .validation import QualityValidator
 from .version_check import check_system_requirements
@@ -133,7 +134,7 @@ def build(
     rebuild_from: Optional[str] = typer.Option(
         None,
         "--rebuild-from",
-        help="Force rebuild from this stage onwards (subtitles|analysis|story|pagination|screenshots|pdf|compress)",
+        help="Force rebuild from this stage onwards (subtitles|analysis|story|gap_fill|pagination|screenshots|pdf|compress)",
     ),
     dry_run: bool = typer.Option(
         False,
@@ -397,6 +398,43 @@ def build(
                 console.print(f"[yellow]Stage: STORY[/yellow] skipped ({reason})")
                 with open(story_md_path, "r", encoding="utf-8") as f:
                     story_text = f.read()
+                timer.end_stage()
+
+            # =====================================================================
+            # STAGE: GAP_FILL (VideoAgent-style iterative retrieval)
+            # =====================================================================
+            run_gap_fill, reason = should_run_stage(Stage.GAP_FILL, video_path, artifacts_dir, force_from)
+            analysis_enriched_path = artifacts_dir / "analysis_enriched.json"
+            
+            timer.begin_stage("Gap Fill")
+            if run_gap_fill:
+                console.print(f"[blue]Stage: GAP_FILL[/blue] ({reason})")
+                
+                analysis_result, gap_result = fill_moment_gaps(
+                    story_text=story_text,
+                    analysis=analysis_result,
+                    subtitles=segments,
+                    video_path=video_path,
+                    cache_dir=cache_dir,
+                    franchise_db=franchise_db,
+                    max_retrievals=10,  # Cap to stay frame-efficient
+                )
+                
+                # Save enriched analysis
+                with open(analysis_enriched_path, "w", encoding="utf-8") as f:
+                    json.dump(analysis_result.model_dump(), f, indent=2, ensure_ascii=False)
+                
+                elapsed = timer.end_stage()
+                console.print(
+                    f"[green]✓ Gap fill: {gap_result.gaps_filled}/{gap_result.gaps_found} gaps filled[/green] "
+                    f"[dim]({_format_duration(elapsed)})[/dim]"
+                )
+            else:
+                console.print(f"[yellow]Stage: GAP_FILL[/yellow] skipped ({reason})")
+                # Load enriched analysis if it exists, otherwise use original
+                if analysis_enriched_path.exists():
+                    with open(analysis_enriched_path, "r", encoding="utf-8") as f:
+                        analysis_result = AnalysisResult.model_validate(json.load(f))
                 timer.end_stage()
 
             # =====================================================================
