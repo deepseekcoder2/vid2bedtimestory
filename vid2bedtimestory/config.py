@@ -158,7 +158,8 @@ class LLMConfig(BaseModel):
     creative_base_url: str = "https://openrouter.ai/api/v1"
     
     # Utility tasks (visual query, simple extraction): cheap model
-    utility_model: str = "openai/gpt-4o-mini"
+    utility_model: str = "deepseek/deepseek-v3.2"
+    utility_model_fallback: str = "google/gemini-2.5-flash"
     
     # Frame scoring VLM: Can be "local" (MLX-VLM) or "cloud" (OpenRouter)
     vlm_backend: str = "cloud"  # "local" or "cloud"

@@ -187,8 +187,16 @@ def call_llm(
     max_retries = 3
     last_error = None
     empty_responses = []  # Track empty responses for diagnostic log
+    used_fallback = False  # Track if fallback model is used
     
     for attempt in range(max_retries):
+        current_model = model
+        if used_fallback:
+            current_model = config.llm.utility_model_fallback
+            print(f"[llm] Using fallback model: {current_model}")
+        
+        payload["model"] = current_model
+        
         try:
             response = requests.post(
                 endpoint,
@@ -205,6 +213,13 @@ def call_llm(
             
             content = result["choices"][0]["message"]["content"]
             finish_reason = result["choices"][0].get("finish_reason", "unknown")
+            
+            # Check for content filter and switch to fallback model
+            if finish_reason == "content_filter" and not used_fallback:
+                print(f"[llm] WARNING: Content filter triggered for {model}. Switching to fallback model.")
+                used_fallback = True
+                empty_responses = []
+                continue
             
             # Check for empty/None content and retry
             if content is None or content.strip() == "":
@@ -930,19 +945,27 @@ def enforce_chronological_moments(book_spec: BookSpec, analysis_result: Analysis
     The LLM sometimes assigns moment_ids that go backwards in time.
     This function fixes violations by advancing to the next available moment.
     
+    IMPORTANT: We track prev_timestamp as the moment END (not start) because
+    frame selection can pick any frame within [moment_start, moment_end].
+    If we only tracked moment_start, overlapping moments could pass this check
+    but fail during frame selection when a late frame is chosen.
+    
     Args:
         book_spec: The paginated book specification
         analysis_result: Video analysis with moments
         
     Returns:
         BookSpec with chronologically ordered moment_ids
+        
+    Raises:
+        ValueError: If no valid moment can be found for a page (moment exhaustion)
     """
     # Build moment lookup with timestamps
     moments_by_id = {m.moment_id: m for m in analysis_result.moments}
     sorted_moments = sorted(analysis_result.moments, key=lambda m: m.timestamp_range[0])
     
     fixed_count = 0
-    prev_timestamp = -1.0
+    prev_moment_end = -1.0  # Track END of previous moment, not start
     
     for page in book_spec.pages:
         if not page.moment_id:
@@ -953,20 +976,36 @@ def enforce_chronological_moments(book_spec: BookSpec, analysis_result: Analysis
             continue
         
         moment_start = moment.timestamp_range[0]
+        moment_end = moment.timestamp_range[1]
         
-        # Check for chronological violation
-        if moment_start < prev_timestamp:
-            # Find next moment after prev_timestamp
+        # Check for chronological violation: moment must START after previous moment ENDED
+        # This prevents overlapping moments which cause frame selection failures
+        if moment_start < prev_moment_end:
+            # Find next moment that starts after prev_moment_end
+            found_replacement = False
             for m in sorted_moments:
-                if m.timestamp_range[0] > prev_timestamp:
+                if m.timestamp_range[0] >= prev_moment_end:
                     old_id = page.moment_id
                     page.moment_id = m.moment_id
-                    moment_start = m.timestamp_range[0]
+                    moment_end = m.timestamp_range[1]
                     fixed_count += 1
-                    print(f"[chronology] Page {page.page_index}: {old_id} → {m.moment_id} (was {moments_by_id[old_id].timestamp_range[0]:.1f}s < {prev_timestamp:.1f}s)")
+                    print(
+                        f"[chronology] Page {page.page_index}: {old_id} → {m.moment_id} "
+                        f"(was {moments_by_id[old_id].timestamp_range[0]:.1f}s, needed >= {prev_moment_end:.1f}s)"
+                    )
+                    found_replacement = True
                     break
+            
+            # Fail fast if no valid moment exists - don't let this silently cause
+            # frame selection to fail hours later
+            if not found_replacement:
+                raise ValueError(
+                    f"Page {page.page_index}: Cannot find moment starting after {prev_moment_end:.1f}s. "
+                    f"Video has {len(sorted_moments)} moments but pagination requires non-overlapping "
+                    f"moments for {len(book_spec.pages)} pages. Consider reducing page count."
+                )
         
-        prev_timestamp = moment_start
+        prev_moment_end = moment_end  # Track END for next iteration
     
     if fixed_count > 0:
         print(f"[chronology] Fixed {fixed_count} chronological violations")

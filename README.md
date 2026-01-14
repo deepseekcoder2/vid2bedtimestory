@@ -84,7 +84,7 @@ These models run in the cloud via [OpenRouter](https://openrouter.ai):
 |-------|---------|
 | **Claude Sonnet 4.5** | Story writing, pagination |
 | **Qwen3-VL-235B** | Frame scoring |
-| **GPT-4o-mini** | Utility tasks |
+| **DeepSeek v3.2** | Utility tasks |
 
 See [OpenRouter pricing](https://openrouter.ai/models) for current rates.
 
