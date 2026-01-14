@@ -601,7 +601,7 @@ VISUAL:'''
     result = call_llm(
         messages=[{"role": "user", "content": prompt}],
         model=config.llm.utility_model,
-        max_tokens=100,
+        max_tokens=200,
     )
     
     visual_query = result.strip()

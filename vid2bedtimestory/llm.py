@@ -51,6 +51,88 @@ def load_api_key(base_url: str = None) -> str:
         raise LLMError("openrouterapikey.md file not found")
 
 
+def _write_llm_error_log(
+    model: str,
+    max_tokens: int,
+    messages: list[Dict[str, Any]],
+    empty_responses: list[dict],
+) -> Path:
+    """
+    Write a diagnostic log file for LLM errors.
+    
+    Args:
+        model: The model that was called
+        max_tokens: Token limit used
+        messages: The messages sent to the API
+        empty_responses: List of empty response details from each attempt
+        
+    Returns:
+        Path to the created log file
+    """
+    from datetime import datetime
+    
+    # Create logs directory in project root
+    logs_dir = Path(__file__).parent.parent / "logs"
+    logs_dir.mkdir(parents=True, exist_ok=True)
+    
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    log_path = logs_dir / f"llm_error_{timestamp}.log"
+    
+    # Build log content
+    lines = [
+        "=" * 60,
+        "LLM ERROR DIAGNOSTIC LOG",
+        "=" * 60,
+        f"Timestamp: {datetime.now().isoformat()}",
+        f"Model: {model}",
+        f"Max Tokens: {max_tokens}",
+        f"Attempts: {len(empty_responses)}",
+        "",
+        "=" * 60,
+        "PROMPT",
+        "=" * 60,
+    ]
+    
+    # Add messages
+    for i, msg in enumerate(messages):
+        role = msg.get("role", "unknown")
+        content = msg.get("content", "")
+        if isinstance(content, str):
+            lines.append(f"[{role}]")
+            lines.append(content)
+            lines.append("")
+        else:
+            lines.append(f"[{role}] (non-string content: {type(content).__name__})")
+            lines.append("")
+    
+    lines.extend([
+        "=" * 60,
+        "RESPONSES",
+        "=" * 60,
+    ])
+    
+    for resp in empty_responses:
+        lines.append(f"Attempt {resp['attempt']}: \"{resp['content']}\" (finish_reason: {resp['finish_reason']})")
+    
+    lines.extend([
+        "",
+        "=" * 60,
+        "TROUBLESHOOTING",
+        "=" * 60,
+        "1. Check if the model is available on OpenRouter",
+        "2. Check your API key and rate limits",
+        "3. Try running the same prompt manually",
+        "4. Report this issue at: https://github.com/your-repo/bookify/issues",
+        "   Please include this log file.",
+    ])
+    
+    # Write to file
+    with open(log_path, "w", encoding="utf-8") as f:
+        f.write("\n".join(lines))
+    
+    return log_path
+
+
 def call_llm(
     messages: list[Dict[str, Any]],
     response_format: Dict[str, str] = None,
@@ -101,9 +183,10 @@ def call_llm(
     total_chars = sum(len(m.get("content", "")) if isinstance(m.get("content"), str) else 0 for m in messages)
     print(f"[llm] Calling {model} (max_tokens={max_tokens}, prompt_chars={total_chars})")
     
-    # Retry logic for transient network errors
+    # Retry logic for transient network errors and empty responses
     max_retries = 3
     last_error = None
+    empty_responses = []  # Track empty responses for diagnostic log
     
     for attempt in range(max_retries):
         try:
@@ -114,7 +197,6 @@ def call_llm(
                 timeout=config.llm.timeout if hasattr(config, 'llm') else 600,
             )
             response.raise_for_status()
-
             result = response.json()
             
             # Check if response has expected structure
@@ -122,13 +204,45 @@ def call_llm(
                 raise LLMError(f"Unexpected response format: {json.dumps(result, indent=2)}")
             
             content = result["choices"][0]["message"]["content"]
+            finish_reason = result["choices"][0].get("finish_reason", "unknown")
             
-            # Debug: check for empty/None content
-            if content is None:
-                finish_reason = result["choices"][0].get("finish_reason", "unknown")
-                print(f"[llm] WARNING: API returned null content (finish_reason: {finish_reason})")
-                print(f"[llm] Full response: {json.dumps(result, indent=2)[:500]}")
-                return ""
+            # Check for empty/None content and retry
+            if content is None or content.strip() == "":
+                empty_responses.append({
+                    "attempt": attempt + 1,
+                    "content": content,
+                    "finish_reason": finish_reason,
+                })
+                print(f"[llm] WARNING: Empty response (attempt {attempt + 1}/{max_retries}, finish_reason: {finish_reason})")
+                
+                if attempt < max_retries - 1:
+                    import time
+                    wait_time = 2 ** attempt
+                    print(f"[llm] Retrying in {wait_time}s...")
+                    time.sleep(wait_time)
+                    continue
+                
+                # All retries exhausted - write diagnostic log and raise error
+                try:
+                    log_path = _write_llm_error_log(
+                        model=model,
+                        max_tokens=max_tokens,
+                        messages=messages,
+                        empty_responses=empty_responses,
+                    )
+                    raise LLMError(
+                        f"LLM returned empty response after {max_retries} attempts.\n"
+                        f"Diagnostic log saved to: {log_path}\n"
+                        f"Please include this file when reporting issues."
+                    )
+                except LLMError:
+                    raise  # Re-raise the LLMError we just created
+                except Exception as log_err:
+                    # Log file write failed, still raise the main error
+                    raise LLMError(
+                        f"LLM returned empty response after {max_retries} attempts.\n"
+                        f"(Failed to write diagnostic log: {log_err})"
+                    )
             
             return content
 
